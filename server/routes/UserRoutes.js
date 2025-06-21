@@ -19,7 +19,7 @@ router.get(
     "/get-users",
     AuthMiddleware,
     AccessMiddleware(["Admin",]),
-    CacheMiddleware('get-users', (req) => 'all', 120),
+    CacheMiddleware('get-users', (req) => 'all'),
     HandleGetAllUsers
 );
 

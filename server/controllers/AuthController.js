@@ -6,8 +6,6 @@ import {
 } from "../utils/TokenGenerator.js";
 import AdminModel from "../models/AdminSchema.js";
 import UserModel from "../models/UserSchema.js";
-import AgencyModel from "../models/AgencySchema.js";
-import OperatorModel from "../models/OperatorSchema.js";
 
 // REGISTER
 // METHOD : POST
@@ -22,12 +20,19 @@ const register = async (req, res, next) => {
       })) ||
       (await UserModel.findOne({
         $or: [{ username }, { email }],
-      })) ;
-      
+      }));
+
     if (existingUser) {
       return res
         .status(400)
         .json({ message: "Username or email already taken" });
+    }
+
+    const validateAdmin = await AdminModel.find();
+    if (validateAdmin.length >= 1) {
+      return res
+        .status(403)
+        .json({ message: "Only one admin can be registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -78,9 +83,6 @@ const login = async (req, res, next) => {
       })) ||
       (await UserModel.findOne({
         $or: [{ email: identifier }, { username: identifier }],
-      })) ||
-      (await AgencyModel.findOne({
-        $or: [{ email: identifier }, { username: identifier }],
       }));
 
     if (!user) {
@@ -108,23 +110,10 @@ const login = async (req, res, next) => {
         _id: user._id,
         createdAt: user.createdAt,
       };
-    } else if (user.role.includes("Agency")) {
-      details = {
-        username: user.username,
-        agencyName: user.agencyName,
-        companyCode: user.companyCode,
-        email: user.email,
-        role: user.role,
-        _id: user._id,
-        createdAt: user.createdAt,
-      };
     } else {
       details = {
         username: user.username,
         email: user.email,
-        country: user.country,
-        countryCode: user.countryCode,
-        phone: user.phone,
         role: user.role,
         _id: user._id,
         createdAt: user.createdAt,
@@ -185,8 +174,6 @@ const logout = async (req, res) => {
 
     const user =
       (await AdminModel.findById(decoded.id)) ||
-      (await OperatorModel.findById(decoded.id)) ||
-      (await AgencyModel.findById(decoded.id)) ||
       (await UserModel.findById(decoded.id));
 
     if (!user) {

@@ -5,9 +5,7 @@ import {
     generateRefreshToken,
 } from "../utils/TokenGenerator.js";
 import AdminModel from "../models/AdminSchema.js";
-import OfficeModel from "../models/OfficeSchema.js";
 import UserModel from "../models/UserSchema.js";
-import AgencyModel from "../models/AgencySchema.js";
 import { normalizeFields } from "../utils/NormalizeString.js";
 import mongoose from "mongoose";
 import SearchQuery from "../utils/SearchQuery.js";
@@ -18,12 +16,8 @@ import invalidateCacheGroup from "../utils/RedisCache.js";
 // ENDPOINT: /api/user/register-user
 const HandleRegisterUser = async (req, res, next) => {
     try {
-
         const { username, password } = req.body;
-
         const { email } = normalizeFields(req.body, ["email"]);
-
-
         const existingUser =
             (await AdminModel.findOne({
                 $or: [{ username }, { email }],
@@ -31,16 +25,12 @@ const HandleRegisterUser = async (req, res, next) => {
             (await UserModel.findOne({
                 $or: [{ username }, { email }],
             }));
-
         if (existingUser) {
             return res
                 .status(400)
                 .json({ message: "Username or email already taken" });
         }
-
-
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const newUser = new UserModel({
             username,
             email,
@@ -55,7 +45,7 @@ const HandleRegisterUser = async (req, res, next) => {
         newUser.refreshToken = refreshToken;
         await newUser.save();
 
-        invalidateCacheGroup("get-agency-users", agencyID)
+        invalidateCacheGroup("get-users", "all")
 
         const userDetails = {
             username: newUser.username,
