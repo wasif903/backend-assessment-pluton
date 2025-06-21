@@ -5,15 +5,12 @@ const BlogSchema = new Schema(
   {
     title: {
       type: String,
-      unique: true,
     },
     description: {
       type: String,
-      unique: true,
     },
     featuredImage: {
       type: String,
-      unique: true,
     },
     tags: {
       type: [String],

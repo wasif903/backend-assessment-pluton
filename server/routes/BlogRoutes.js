@@ -1,11 +1,13 @@
 import express from "express";
-import { HandleGetAllUsers } from "../controllers/UserController.js";
 import validate from "../middlewares/ValidationHandler.js";
-import { userSchema } from "../validations/AuthValidations.js";
 import AuthMiddleware from "../middlewares/AuthMiddleware.js";
 import AccessMiddleware from "../middlewares/AccessMiddleware.js";
 import CacheMiddleware from "../middlewares/CacheMiddleware.js";
-import { HandleCreateBlog } from "../controllers/BlogController.js";
+import {
+  HandleCreateBlog,
+  HandleEditBlog,
+  HandleGetAllBlogs,
+} from "../controllers/BlogController.js";
 import { blogSchema } from "../validations/BlogValidations.js";
 import { CreateUploadMiddleware } from "../middlewares/MulterMiddleware.js";
 
@@ -20,12 +22,20 @@ router.post(
   HandleCreateBlog
 );
 
-router.get(
-  "/get-users",
+router.patch(
+  "/:userID/edit-blog/:blogID",
   AuthMiddleware,
-  AccessMiddleware(["Admin"]),
-  CacheMiddleware("get-users", (req) => "all"),
-  HandleGetAllUsers
+  AccessMiddleware(["User"]),
+  CreateUploadMiddleware([{ name: "featuredImage", isMultiple: false }]),
+  HandleEditBlog
+);
+
+router.get(
+  "/get-blogs",
+  AuthMiddleware,
+  AccessMiddleware(["Admin", "User"]),
+  CacheMiddleware("get-blogs", (req) => "all"),
+  HandleGetAllBlogs
 );
 
 export default router;

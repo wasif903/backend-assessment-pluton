@@ -39,21 +39,75 @@ const HandleCreateBlog = async (req, res, next) => {
 
     await newBlog.save();
 
-    invalidateCacheGroup("blogs", userID);
+    invalidateCacheGroup("get-blogs", "all");
 
     res.status(201).json({
       message: "Blog Created Successfully",
-        blog: newBlog,
+      blog: newBlog,
     });
   } catch (err) {
     next(err);
   }
 };
 
+// REGISTER USER
+// METHOD : POST
+// ENDPOINT: /api/:userID/edit-blog
+const HandleEditBlog = async (req, res, next) => {
+  try {
+    const { userID, blogID } = req.params;
+    const { title, description, tags } = req.body;
+    const featuredImage = req.files?.featuredImage?.[0];
+
+    // Normalize tags if it's a single string
+    let normalizedTags = tags;
+    if (typeof tags === "string") {
+      normalizedTags = [tags];
+    }
+
+    const findUser = await UserModel.findById(userID);
+    if (!findUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const findBlog = await BlogModel.findOne({
+      _id: blogID,
+      createdBy: userID,
+    });
+
+    if (!findBlog) {
+      return res.status(404).json({ message: "Invalid Request" });
+    }
+
+    // Update fields only if provided
+    if (title) findBlog.title = title;
+    if (description) findBlog.description = description;
+    if (normalizedTags) findBlog.tags = normalizedTags;
+
+    // Only update image if a new one is uploaded
+    if (featuredImage) {
+      const relativePath = ExtractRelativeFilePath(featuredImage);
+      findBlog.featuredImage = relativePath;
+    }
+
+    await findBlog.save();
+
+    invalidateCacheGroup("get-blogs", "all");
+
+    res.status(200).json({
+      message: "Blog updated successfully",
+      blog: findBlog,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 // GET ALL USERS
 // METHOD : GET
 // ENDPOINT: /api/user/get-users?search[firstName]=john (WITH PAGINATION & FILTER)
-const HandleGetAllUsers = async (req, res, next) => {
+const HandleGetAllBlogs = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -62,7 +116,36 @@ const HandleGetAllUsers = async (req, res, next) => {
     const search = req.query.search || {};
     const matchStage = SearchQuery(search);
 
-    const pipeline = [];
+    const pipeline = [
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdByDetails",
+        },
+      },
+      {
+        $unwind: "$createdByDetails",
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          featuredImage: 1,
+          tags: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: "$createdByDetails._id",
+          createdByUsername: "$createdByDetails.username",
+          createdByEmail: "$createdByDetails.email",
+        },
+      },
+      {
+        $match: matchStage || {},
+      },
+    ];
 
     if (matchStage) pipeline.push(matchStage);
     pipeline.push({ $sort: { companyCode: -1 } });
@@ -70,18 +153,18 @@ const HandleGetAllUsers = async (req, res, next) => {
     pipeline.push({ $skip: skip });
     pipeline.push({ $limit: limit });
 
-    const users = await UserModel.aggregate(pipeline);
+    const blogs = await BlogModel.aggregate(pipeline);
 
     const countPipeline = [];
     if (matchStage) countPipeline.push(matchStage);
     countPipeline.push({ $count: "totalItems" });
 
-    const countResult = await UserModel.aggregate(countPipeline);
+    const countResult = await BlogModel.aggregate(countPipeline);
     const totalItems = countResult.length > 0 ? countResult[0].totalItems : 0;
     const totalPages = Math.ceil(totalItems / limit);
 
     res.status(200).json({
-      users,
+      blogs,
       meta: {
         totalItems,
         totalPages,
@@ -95,4 +178,4 @@ const HandleGetAllUsers = async (req, res, next) => {
   }
 };
 
-export { HandleCreateBlog, HandleGetAllUsers };
+export { HandleCreateBlog, HandleGetAllBlogs, HandleEditBlog };
