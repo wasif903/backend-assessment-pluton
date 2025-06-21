@@ -13,6 +13,7 @@ import connectDB from "./config/DB.js";
 
 // Routes
 import AuthRoutes from "./routes/AuthRoutes.js";
+import BlogRoutes from "./routes/BlogRoutes.js";
 import UserRoutes from "./routes/UserRoutes.js";
 
 dotenv.config();
@@ -22,20 +23,20 @@ const app = express();
 // === MongoDB Connection ===
 connectDB();
 
-
 // === Global Middlewares ===
 app.use(express.json());
 
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true,
-  methods: ["POST", "GET", "PATCH", "DELETE"]
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+    methods: ["POST", "GET", "PATCH", "DELETE"],
+  })
+);
 
 app.use("/uploads", express.static("uploads"));
 
-
-// === Rate Limiter 
+// === Rate Limiter
 app.use(RateLimiter);
 
 // === Logger Middleware for logging errors
@@ -44,8 +45,9 @@ app.use(ErrorLogger);
 // === Routes ===
 app.use("/api", AuthRoutes);
 app.use("/api/user", UserRoutes);
+app.use("/api/blog", BlogRoutes);
 
-// === Error Handler 
+// === Error Handler
 app.use(ErrorHandler);
 
 // === Server Start ===
