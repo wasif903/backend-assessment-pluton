@@ -42,7 +42,7 @@ router.get(
   "/get-blogs",
   // AuthMiddleware,
   // AccessMiddleware(["Admin", "User"]),
-  // CacheMiddleware("get-blogs", (req) => "all"),
+  CacheMiddleware("get-blogs", (req) => "all"),
   HandleGetAllBlogs
 );
 
