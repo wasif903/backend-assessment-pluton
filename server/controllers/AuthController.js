@@ -110,6 +110,7 @@ const login = async (req, res, next) => {
         _id: user._id,
         createdAt: user.createdAt,
       };
+      console.log(details)
     } else {
       details = {
         username: user.username,

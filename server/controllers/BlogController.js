@@ -145,8 +145,9 @@ const HandleGetAllBlogs = async (req, res, next) => {
     const search = req.query.search || {};
     const matchStage = SearchQuery(search);
 
-    const pipeline = [
-      
+    const pipeline = [];
+    if (matchStage) pipeline.push(matchStage);
+    pipeline.push(
       {
         $lookup: {
           from: "users",
@@ -155,9 +156,7 @@ const HandleGetAllBlogs = async (req, res, next) => {
           as: "createdByDetails",
         },
       },
-      {
-        $unwind: "$createdByDetails",
-      },
+      { $unwind: "$createdByDetails" },
       {
         $project: {
           _id: 1,
@@ -167,18 +166,14 @@ const HandleGetAllBlogs = async (req, res, next) => {
           tags: 1,
           createdAt: 1,
           updatedAt: 1,
-          createdBy: "$createdByDetails._id",
-          createdByUsername: "$createdByDetails.username",
-          createdByEmail: "$createdByDetails.email",
+          createdBy: 1,
+          createdByName: "$createdByDetails.username",
         },
       },
-    ];
-
-    if (matchStage) pipeline.push(matchStage);
-    pipeline.push({ $sort: { createdAt: -1 } });
-
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit });
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    );
 
     const blogs = await BlogModel.aggregate(pipeline);
 

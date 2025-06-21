@@ -7,7 +7,8 @@ import mongoose from "mongoose";
 import SetupSwaggerDocs from "./config/Swagger.js";
 
 
-// Middlewares
+// Middlewaresrs
+
 import ErrorHandler from "./middlewares/ErrorHandler.js";
 import ErrorLogger from "./middlewares/ErrorLogger.js";
 import RateLimiter from "./middlewares/RateLimiter.js";
@@ -40,11 +41,17 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     credentials: true,
-    methods: ["POST", "GET", "PATCH", "DELETE"],
+    methods: ["POST", "GET", "PATCH", "DELETE", "PUT"],
   })
 );
 
-app.use("/uploads", express.static("uploads"));
+// Static file serving with CORS headers
+app.use("/uploads", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.header("Access-Control-Allow-Methods", "GET");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+}, express.static("uploads"));
 
 // === Rate Limiter
 app.use(RateLimiter);

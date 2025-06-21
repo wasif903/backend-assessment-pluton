@@ -40,9 +40,9 @@ router.delete(
 
 router.get(
   "/get-blogs",
-  AuthMiddleware,
-  AccessMiddleware(["Admin", "User"]),
-  CacheMiddleware("get-blogs", (req) => "all"),
+  // AuthMiddleware,
+  // AccessMiddleware(["Admin", "User"]),
+  // CacheMiddleware("get-blogs", (req) => "all"),
   HandleGetAllBlogs
 );
 
