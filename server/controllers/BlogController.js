@@ -13,9 +13,9 @@ import invalidateCacheGroup from "../utils/RedisCache.js";
 import BlogModel from "../models/BlogSchema.js";
 import ExtractRelativeFilePath from "../utils/ExtractRelativePath.js";
 
-// REGISTER USER
+// CREATE BLOG
 // METHOD : POST
-// ENDPOINT: /api/:userID/create-blog
+// ENDPOINT: /api/blog/:userID/create-blog
 const HandleCreateBlog = async (req, res, next) => {
   try {
     const { userID } = req.params;
@@ -50,16 +50,15 @@ const HandleCreateBlog = async (req, res, next) => {
   }
 };
 
-// REGISTER USER
+// EDIT BLOG
 // METHOD : POST
-// ENDPOINT: /api/:userID/edit-blog
+// ENDPOINT: /api/blog/:userID/edit-blog/:blogID
 const HandleEditBlog = async (req, res, next) => {
   try {
     const { userID, blogID } = req.params;
     const { title, description, tags } = req.body;
     const featuredImage = req.files?.featuredImage?.[0];
 
-    // Normalize tags if it's a single string
     let normalizedTags = tags;
     if (typeof tags === "string") {
       normalizedTags = [tags];
@@ -79,12 +78,10 @@ const HandleEditBlog = async (req, res, next) => {
       return res.status(404).json({ message: "Invalid Request" });
     }
 
-    // Update fields only if provided
     if (title) findBlog.title = title;
     if (description) findBlog.description = description;
     if (normalizedTags) findBlog.tags = normalizedTags;
 
-    // Only update image if a new one is uploaded
     if (featuredImage) {
       const relativePath = ExtractRelativeFilePath(featuredImage);
       findBlog.featuredImage = relativePath;
@@ -103,10 +100,42 @@ const HandleEditBlog = async (req, res, next) => {
   }
 };
 
+// DELETE BLOG
+// METHOD : POST
+// ENDPOINT: /api/blog/:userID/edit-blog/:blogID
+const HandleDeleteBlog = async (req, res, next) => {
+  try {
+    const { userID, blogID } = req.params;
 
-// GET ALL USERS
+    const findUser = await UserModel.findById(userID);
+    if (!findUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const findBlog = await BlogModel.findOne({
+      _id: blogID,
+      createdBy: userID,
+    });
+
+    if (!findBlog) {
+      return res.status(404).json({ message: "Blog not found or unauthorized" });
+    }
+
+    await BlogModel.deleteOne({ _id: blogID });
+
+    invalidateCacheGroup("get-blogs", "all");
+
+    res.status(200).json({
+      message: "Blog deleted successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET ALL BLOGS
 // METHOD : GET
-// ENDPOINT: /api/user/get-users?search[firstName]=john (WITH PAGINATION & FILTER)
+// ENDPOINT: /api/blog/get-blogs?search[title]=Test (WITH PAGINATION & FILTER)
 const HandleGetAllBlogs = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -117,6 +146,7 @@ const HandleGetAllBlogs = async (req, res, next) => {
     const matchStage = SearchQuery(search);
 
     const pipeline = [
+      
       {
         $lookup: {
           from: "users",
@@ -142,13 +172,10 @@ const HandleGetAllBlogs = async (req, res, next) => {
           createdByEmail: "$createdByDetails.email",
         },
       },
-      {
-        $match: matchStage || {},
-      },
     ];
 
     if (matchStage) pipeline.push(matchStage);
-    pipeline.push({ $sort: { companyCode: -1 } });
+    pipeline.push({ $sort: { createdAt: -1 } });
 
     pipeline.push({ $skip: skip });
     pipeline.push({ $limit: limit });
@@ -178,4 +205,6 @@ const HandleGetAllBlogs = async (req, res, next) => {
   }
 };
 
-export { HandleCreateBlog, HandleGetAllBlogs, HandleEditBlog };
+
+
+export { HandleCreateBlog, HandleGetAllBlogs, HandleEditBlog, HandleDeleteBlog };

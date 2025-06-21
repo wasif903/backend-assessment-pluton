@@ -3,10 +3,15 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
+// Swagger
+import SetupSwaggerDocs from "./config/Swagger.js";
+
+
 // Middlewares
 import ErrorHandler from "./middlewares/ErrorHandler.js";
 import ErrorLogger from "./middlewares/ErrorLogger.js";
 import RateLimiter from "./middlewares/RateLimiter.js";
+import SecurityHeaders from "./middlewares/HelmetMiddleware.js";
 
 // DB Connection
 import connectDB from "./config/DB.js";
@@ -16,12 +21,17 @@ import AuthRoutes from "./routes/AuthRoutes.js";
 import BlogRoutes from "./routes/BlogRoutes.js";
 import UserRoutes from "./routes/UserRoutes.js";
 
+
 dotenv.config();
 
 const app = express();
 
+SetupSwaggerDocs(app);
+
 // === MongoDB Connection ===
 connectDB();
+
+app.use(SecurityHeaders);
 
 // === Global Middlewares ===
 app.use(express.json());

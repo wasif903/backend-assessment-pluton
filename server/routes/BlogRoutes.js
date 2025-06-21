@@ -5,6 +5,7 @@ import AccessMiddleware from "../middlewares/AccessMiddleware.js";
 import CacheMiddleware from "../middlewares/CacheMiddleware.js";
 import {
   HandleCreateBlog,
+  HandleDeleteBlog,
   HandleEditBlog,
   HandleGetAllBlogs,
 } from "../controllers/BlogController.js";
@@ -30,6 +31,13 @@ router.patch(
   HandleEditBlog
 );
 
+router.delete(
+  "/:userID/delete-blog/:blogID",
+  AuthMiddleware,
+  AccessMiddleware(["User", "Admin"]),
+  HandleDeleteBlog
+);
+
 router.get(
   "/get-blogs",
   AuthMiddleware,
@@ -37,5 +45,8 @@ router.get(
   CacheMiddleware("get-blogs", (req) => "all"),
   HandleGetAllBlogs
 );
+
+
+
 
 export default router;
