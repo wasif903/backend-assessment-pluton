@@ -1,9 +1,14 @@
 import { normalizeString } from "./NormalizeString.js";
 
+const escapeRegex = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 const buildMatchCondition = (key, value) => {
   if (typeof value === 'string' && value.trim()) {
+    const safeValue = escapeRegex(value.trim());
     return {
-      [key]: { $regex: `^${value.trim()}`, $options: 'i' },
+      [key]: { $regex: `${safeValue}`, $options: 'i' },
     };
   }
   if (typeof value === 'number') {
