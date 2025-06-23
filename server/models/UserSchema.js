@@ -17,7 +17,10 @@ const UserSchema = new Schema(
       enum: ["User"],
       default: ["User"],
     },
-    refreshToken: String,
+    refreshTokens: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );

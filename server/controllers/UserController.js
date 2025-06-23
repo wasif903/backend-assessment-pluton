@@ -42,8 +42,11 @@ const HandleRegisterUser = async (req, res, next) => {
         const accessToken = generateAccessToken(newUser);
         const refreshToken = generateRefreshToken(newUser);
 
-        newUser.refreshToken = refreshToken;
-        await newUser.save();
+        // Add the new refresh token to the array if not already present
+        if (!newUser.refreshTokens.includes(refreshToken)) {
+            newUser.refreshTokens.push(refreshToken);
+            await newUser.save();
+        }
 
         invalidateCacheGroup("get-users", "all")
 

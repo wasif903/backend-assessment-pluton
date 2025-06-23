@@ -16,7 +16,10 @@ const AdminSchema = new Schema({
     enum: ["Admin"],
     default: ["Admin"],
   },
-  refreshToken: String,
+  refreshTokens: {
+    type: [String],
+    default: [],
+  },
 }, {
   timestamps: true,
 });

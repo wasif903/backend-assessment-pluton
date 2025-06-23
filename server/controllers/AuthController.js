@@ -97,8 +97,11 @@ const login = async (req, res, next) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    user.refreshToken = refreshToken;
-    await user.save();
+    // Add the new refresh token to the array if not already present
+    if (!user.refreshTokens.includes(refreshToken)) {
+      user.refreshTokens.push(refreshToken);
+      await user.save();
+    }
 
     let details;
 
@@ -148,13 +151,13 @@ const refreshToken = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.refreshToken !== token) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+    if (user.refreshTokens.includes(token)) {
+      const accessToken = generateAccessToken(user);
+
+      res.status(200).json({ accessToken });
+    } else {
+      res.status(403).json({ message: "Invalid refresh token" });
     }
-
-    const accessToken = generateAccessToken(user);
-
-    res.status(200).json({ accessToken });
   } catch (err) {
     res.status(403).json({ message: "Invalid refresh token" });
   }
@@ -181,7 +184,7 @@ const logout = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.refreshToken = null;
+    user.refreshTokens = user.refreshTokens.filter(t => t !== token);
     await user.save();
 
     res.status(200).json({ message: "Logged out successfully" });
